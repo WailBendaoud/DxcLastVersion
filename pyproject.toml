@@ -13,8 +13,10 @@ dependencies = [
     "langchain-ollama>=0.3.6",
     "langchain-openai>=0.3.28",
     "openai>=1.97.1",
+    "plotly>=6.2.0",
     "pymongo>=4.13.2",
     "pymupdf>=1.26.3",
     "python-dotenv>=1.1.1",
     "streamlit>=1.47.0",
+    "streamlit-pdf-viewer>=0.0.26",
 ]
