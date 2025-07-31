@@ -9,7 +9,7 @@ db = client["local"]
 cv_collection = db["CV"]
 
 st.set_page_config(page_title="Technologies & CV", page_icon="📊")
-st.title("📊 Statistiques des technologies utilisées dans les CV")
+st.title(" Statistiques des technologies utilisées dans les CV")
 
 # 🧮 Pipeline d'agrégation
 pipeline = [
@@ -24,7 +24,7 @@ pipeline = [
 
 resultats = list(cv_collection.aggregate(pipeline))
 
-# 📊 Traitement
+
 data = []
 for res in resultats:
     data.append({

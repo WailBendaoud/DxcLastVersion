@@ -81,7 +81,7 @@ CV:
                 return []
         
         skills = donnees.get("skills_detectes", [])
-        print(f"✅ {len(skills)} compétences extraites")
+        print(f" {len(skills)} compétences extraites")
         return skills
         
     except Exception as e:
@@ -93,7 +93,7 @@ def normaliser_skills(skills_cv, technologies_reference, llm):
         print("❌ Aucun skill à normaliser")
         return []
     
-    print(f"🔄 Normalisation de {len(skills_cv)} compétences...")
+    print(f" Normalisation de {len(skills_cv)} compétences...")
 
     skills_str = ", ".join(skills_cv)
     techno_str = ", ".join(technologies_reference)
@@ -154,22 +154,22 @@ FORMAT DE RÉPONSE (uniquement ce JSON, sans texte autour) :
         match = re.search(r"\{[\s\S]*\}", reponse_nettoyee)
 
         if not match:
-            print("❌ Aucun JSON trouvé dans la normalisation.")
-            print("📝 Réponse brute du LLM :\n", reponse_nettoyee)
+            print(" Aucun JSON trouvé dans la normalisation.")
+            print(" Réponse brute du LLM :\n", reponse_nettoyee)
             return []
 
         bloc_json = match.group(0)
-        print("📦 JSON brut détecté (tentative de parsing)...")
+        print(" JSON brut détecté (tentative de parsing)...")
 
         try:
             donnees = json5.loads(bloc_json)
         except Exception as je:
-            print(f"❌ Erreur JSON5 : {je}")
-            print("📝 JSON renvoyé par le LLM :\n", bloc_json)
+            print(f" Erreur JSON5 : {je}")
+            print(" JSON renvoyé par le LLM :\n", bloc_json)
             return []
 
         technologies_normalisees = donnees.get("technologies_normalisees", [])
-        print(f"✅ {len(technologies_normalisees)} compétences normalisées")
+        print(f" {len(technologies_normalisees)} compétences normalisées")
         return technologies_normalisees
 
     except Exception as e:
@@ -214,7 +214,7 @@ CV:
         reponse_nettoyee = reponse.strip()
         match = re.search(r"\{[\s\S]*\}", reponse_nettoyee)
         if not match:
-            print(f"❌ Aucun JSON trouvé dans l'analyse des infos")
+            print(f" Aucun JSON trouvé dans l'analyse des infos")
             return None
             
         bloc_json = match.group(0)
@@ -231,11 +231,11 @@ CV:
             try:
                 return json.loads(bloc_json_corrige)
             except:
-                print(f"❌ JSON des infos non corrigeable")
+                print(f" JSON des infos non corrigeable")
                 return None
         
     except Exception as e:
-        print(f"❌ Erreur analyse infos : {e}")
+        print(f" Erreur analyse infos : {e}")
         return None
 
 def ajouter_nouvelles_technologies(technologies_normalisees):
@@ -260,27 +260,54 @@ def ajouter_nouvelles_technologies(technologies_normalisees):
                 "tech": nom_tech,
             })
             nouvelles_technos += 1
-            print(f"🆕 Nouvelle technologie ajoutée: {nom_tech}")
+            print(f" Nouvelle technologie ajoutée: {nom_tech}")
 
     client.close()
     if nouvelles_technos > 0:
-        print(f"✅ {nouvelles_technos} nouvelles technologies ajoutées au référentiel")
+        print(f" {nouvelles_technos} nouvelles technologies ajoutées au référentiel")
     else:
-        print("✅ Aucune nouvelle technologie à ajouter (déjà connues)")
+        print(" Aucune nouvelle technologie à ajouter (déjà connues)")
 
     return nouvelles_technos
 
+def generer_resume_cv(cv_texte, llm):
+    """Génère un paragraphe de résumé professionnel du CV"""
+    prompt_resume = PromptTemplate(
+        input_variables=["cv"],
+        template="""
+Tu es un assistant RH. Rédige un **paragraphe professionnel de 2 à 3 lignes** qui résume **le contenu du CV**.
+
+🔒 INSTRUCTIONS :
+- Pas de titre, pas de bullet points
+- Ne commence pas par "Voici le résumé", "Ce CV présente", etc.
+- Commence directement par une phrase descriptive sur le candidat
+- Langue : française, style formel, objectif
+
+CV :
+{cv}
+"""
+
+    )
+    
+    chain = prompt_resume | llm
+    try:
+        reponse = chain.invoke({"cv": cv_texte}).strip()
+        return reponse
+    except Exception as e:
+        print(f" Erreur génération résumé : {e}")
+        return "Résumé non disponible"
+    
 def analyser_cv():
     """Fonction principale d'analyse des CVs"""
-    print("🚀 Démarrage de l'analyse des CVs")
+    print(" Démarrage de l'analyse des CVs")
     
     # Initialisation
     llm = OllamaLLM(model="llama3.1")
     
     # Récupération du référentiel
-    print("📚 Chargement du référentiel de technologies...")
+    print(" Chargement du référentiel de technologies...")
     technologies_reference = recuperer_technologies_reference()
-    print(f"✅ {len(technologies_reference)} technologies de référence chargées")
+    print(f" {len(technologies_reference)} technologies de référence chargées")
     
     # Connexion MongoDB
     client = MongoClient("mongodb://localhost:27017/")
@@ -291,40 +318,40 @@ def analyser_cv():
     fichiers_pdf = [f for f in os.listdir(PDF_FOLDER) 
                    if f.lower().endswith(".pdf") and not f.endswith("_done.pdf")]
     
-    print(f"📁 {len(fichiers_pdf)} fichiers PDF à traiter")
+    print(f" {len(fichiers_pdf)} fichiers PDF à traiter")
 
     for filename in fichiers_pdf:
         filepath = os.path.join(PDF_FOLDER, filename)
         print(f"\n{'='*60}")
-        print(f"📄 TRAITEMENT: {filename}")
+        print(f"TRAITEMENT: {filename}")
         print(f"{'='*60}")
 
         try:
             # Chargement du PDF
-            print("1️⃣ Chargement du PDF...")
+            print(" Chargement du PDF...")
             loader = PyMuPDFLoader(filepath)
             documents = loader.load()
             texte_cv = "\n".join([doc.page_content for doc in documents])
-            print(f"✅ PDF chargé ({len(texte_cv)} caractères)")
+            print(f" PDF chargé ({len(texte_cv)} caractères)")
 
             # Étape 1: Extraction des compétences
-            print("\n2️⃣ Extraction des compétences...")
+            print("\n Extraction des compétences...")
             skills_cv = extraire_skills_cv(texte_cv, llm)
             if not skills_cv:
-                print("❌ Aucune compétence extraite, passage au fichier suivant")
+                print(" Aucune compétence extraite, passage au fichier suivant")
                 continue
             
             print(f"📋 Compétences détectées: {', '.join(skills_cv[:10])}{'...' if len(skills_cv) > 10 else ''}")
 
             # Étape 2: Normalisation (UNE SEULE FOIS)
-            print(f"\n3️⃣ Normalisation des compétences...")
+            print(f"\n Normalisation des compétences...")
             technologies_normalisees = normaliser_skills(skills_cv, technologies_reference, llm)
             if not technologies_normalisees:
-                print("❌ Échec de la normalisation")
+                print(" Échec de la normalisation")
                 continue
 
             # Affichage des correspondances avec validation
-            print("\n📊 Résultats de la normalisation:")
+            print("\n Résultats de la normalisation:")
             correspondances_trouvees = 0
             nouvelles_technologies = 0
             
@@ -335,24 +362,26 @@ def analyser_cv():
                 niveau = tech.get("niveau", "")
                 
                 if correspondance:
-                    status = "✅ MAPPÉ"
+                    status = " MAPPÉ"
                     correspondances_trouvees += 1
                     # Vérifier que le nom normalisé existe vraiment dans le référentiel
                     if normalise not in technologies_reference:
-                        print(f"   ⚠️  ATTENTION: {normalise} n'existe pas dans le référentiel!")
+                        print(f"     ATTENTION: {normalise} n'existe pas dans le référentiel!")
                 else:
-                    status = "🆕 NOUVEAU"
+                    status = " NOUVEAU"
                     nouvelles_technologies += 1
                 
                 print(f"   {status}: ORIGINAL {original} → NORMALISER {normalise} ({niveau})")
             
-            print(f"\n📈 Résumé: {correspondances_trouvees} mappés, {nouvelles_technologies} nouveaux")
+            print(f"\nRésumé: {correspondances_trouvees} mappés, {nouvelles_technologies} nouveaux")
 
             # Étape 3: Analyse des informations personnelles
-            print(f"\n4️⃣ Extraction des informations personnelles...")
+            print(f"\n Extraction des informations personnelles...")
             infos_cv = analyser_informations_cv(texte_cv, llm)
+            resume_cv = generer_resume_cv(texte_cv, llm)
+            print(f"\n Résumé généré : {resume_cv}")
             if not infos_cv:
-                print("❌ Échec de l'extraction des informations")
+                print("Échec de l'extraction des informations")
                 continue
 
             # Préparation des technologies pour la sauvegarde
@@ -380,15 +409,15 @@ def analyser_cv():
 
 
             # Affichage du résumé
-            print(f"\n✅ RÉSULTATS FINAUX:")
-            print(f"👤 Nom: {infos_cv.get('nom', 'Inconnu')}")
-            print(f"💼 Titre: {infos_cv.get('titre', 'Non précisé')}")
-            print(f"📅 Expérience: {infos_cv.get('annees_experience', 0)} ans")
-            print(f"🔧 Technologies: {len(technologies_finales)} compétences")
-            print(f"💼 Expériences: {len(infos_cv.get('experiences', []))} postes")
+            print(f"\n RÉSULTATS FINAUX:")
+            print(f" Nom: {infos_cv.get('nom', 'Inconnu')}")
+            print(f" Titre: {infos_cv.get('titre', 'Non précisé')}")
+            print(f"Expérience: {infos_cv.get('annees_experience', 0)} ans")
+            print(f" Technologies: {len(technologies_finales)} compétences")
+            print(f" Expériences: {len(infos_cv.get('experiences', []))} postes")
 
             # Sauvegarde en MongoDB
-            print(f"\n5️⃣ Sauvegarde en base de données...")
+            print(f"\nSauvegarde en base de données...")
             pdf_name = filename.replace(".pdf", "_done.pdf")
             doc_mongo = {
                 "nom_fichier": pdf_name,
@@ -397,12 +426,11 @@ def analyser_cv():
                 "technologies": technologies_finales,  # TOUTES les technologies normalisées
                 "experiences": infos_cv.get("experiences", []),
                 "annees_experience": infos_cv.get("annees_experience", 0),
-                "nb_technologies": len(technologies_finales),
-                "nb_correspondances": correspondances_trouvees
+                "resume":resume_cv
             }
             
             collection.insert_one(doc_mongo)
-            print("✅ Données sauvegardées dans MongoDB")
+            print(" Données sauvegardées dans MongoDB")
 
             # Mise à jour du référentiel
             nouvelles_technos = ajouter_nouvelles_technologies(technologies_normalisees)
@@ -410,18 +438,18 @@ def analyser_cv():
             # Renommage du fichier
             nouveau_chemin = os.path.join(PDF_FOLDER, pdf_name)
             os.rename(filepath, nouveau_chemin)
-            print(f"📁 Fichier renommé: {pdf_name}")
+            print(f" Fichier renommé: {pdf_name}")
 
-            print(f"\n🎉 SUCCÈS: {filename} traité avec succès!")
-            print(f"   💾 {len(technologies_finales)} technologies sauvegardées")
-            print(f"   🆕 {nouvelles_technos} nouvelles technologies ajoutées au référentiel")
+            print(f"\n SUCCÈS: {filename} traité avec succès!")
+            print(f"    {len(technologies_finales)} technologies sauvegardées")
+            print(f"  {nouvelles_technos} nouvelles technologies ajoutées au référentiel")
 
         except Exception as e:
-            print(f"\n❌ ERREUR sur {filename}: {e}")
+            print(f"\n ERREUR sur {filename}: {e}")
             import traceback
             print(traceback.format_exc())
 
     client.close()
-    print(f"\n🏁 ANALYSE TERMINÉE - Tous les fichiers ont été traités")
+    print(f"\n ANALYSE TERMINÉE - Tous les fichiers ont été traités")
 
        

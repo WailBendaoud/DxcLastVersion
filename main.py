@@ -1,7 +1,7 @@
 
 import time
 import streamlit as st
-from an import analyser_cv
+from Analyse import analyser_cv
 
 
 st.set_page_config(page_title="Accueil", page_icon="🏠")
@@ -12,7 +12,7 @@ st.set_page_config(page_title="Accueil", page_icon="🏠")
 
 mail=st.Page(
     page="views/RecuperationDuMail .py",
-    title="Récuperation des cv"
+    title="Récuperation des cv via mail "
 )
 upload=st.Page(
     page="views/UploadCv.py",
@@ -28,14 +28,14 @@ techno=st.Page(
 )
 technos=st.Page(
     page="views/Technos.py",
-    title="Test par technologie"
+    title="Statistique"
 )
-pg=st.navigation(pages=[mail,upload,chatbot,techno,technos])
+cv=st.Page(
+    page="views/Galery.py",
+    title="CV"
+)
+pg=st.navigation(pages=[mail,upload,chatbot,techno,technos,cv])
 pg.run()
-while True:
-        print("\n Lancement de l'analyse automatique des CV...")
-        analyser_cv()
-        print("Attente de 10 minutes avant le prochain scan...")
-        time.sleep(600)  
+
         
 

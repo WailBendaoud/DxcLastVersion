@@ -3,6 +3,7 @@ import imaplib
 import email
 from email.header import decode_header
 import os
+import uuid
 
 # Dossier de sauvegarde des pièces jointes
 ATTACHMENTS_DIR = "pieces_jointes"
@@ -45,14 +46,20 @@ def extract_unread_pdf_by_subject(email_address, email_password, target_subject)
                             if isinstance(decoded_name, bytes):
                                 decoded_name = decoded_name.decode(errors="ignore")
 
-                            filepath = os.path.join(ATTACHMENTS_DIR, decoded_name)
+                            # Nom de fichier avec UUID (comme dans upload manuel)
+                            base, ext = os.path.splitext(decoded_name)
+                            unique_id = uuid.uuid4().hex
+                            unique_name = f"{base}_{unique_id}{ext}"
+                            filepath = os.path.join(ATTACHMENTS_DIR, unique_name)
+
                             with open(filepath, 'wb') as f:
                                 f.write(part.get_payload(decode=True))
+
                             found_pdf = True
                             count += 1
-                            st.success(f"📄 PDF enregistré : {decoded_name}")
+                            st.success(f" PDF enregistré : {unique_name}")
                         else:
-                            st.info(f" Pièce jointe ignorée : {filename}")
+                            st.info(f"Pièce jointe ignorée : {filename}")
                 if found_pdf:
                     mail.store(eid, '+FLAGS', '\\Seen')
         mail.logout()
@@ -62,17 +69,16 @@ def extract_unread_pdf_by_subject(email_address, email_password, target_subject)
     except Exception as e:
         return f"Erreur : {str(e)}"
 
-
+# Interface Streamlit
 st.set_page_config(page_title="Extraction de CV", page_icon="📧")
-
-st.title("📧 Extraction de CV par sujet")
+st.title(" Extraction de CV par sujet")
 st.markdown("Entrez les informations pour extraire les pièces jointes PDF des e-mails non lus avec un sujet spécifique.")
 
 email_input = st.text_input("Adresse e-mail", value="", placeholder="ex: contactcvstage@gmail.com")
 password_input = st.text_input("Mot de passe de l'application Gmail", type="password")
 subject_input = st.text_input("Sujet de l’e-mail à filtrer", placeholder="CV STAGE")
 
-if st.button("📥 Extraire les fichiers PDF"):
+if st.button(" Extraire les fichiers PDF"):
     if email_input and password_input and subject_input:
         with st.spinner("Connexion et extraction en cours..."):
             result = extract_unread_pdf_by_subject(email_input, password_input, subject_input)
